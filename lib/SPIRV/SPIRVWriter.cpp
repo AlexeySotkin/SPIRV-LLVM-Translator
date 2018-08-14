@@ -110,8 +110,8 @@ static void foreachKernelArgMD(
     MDNode *MD, SPIRVFunction *BF,
     std::function<void(const std::string &Str, SPIRVFunctionParameter *BA)>
         Func) {
-  for (unsigned I = 1, E = MD->getNumOperands(); I != E; ++I) {
-    SPIRVFunctionParameter *BA = BF->getArgument(I - 1);
+  for (unsigned I = 0, E = MD->getNumOperands(); I != E; ++I) {
+    SPIRVFunctionParameter *BA = BF->getArgument(I);
     Func(getMDOperandAsString(MD, I), BA);
   }
 }
@@ -1589,50 +1589,35 @@ bool LLVMToSPIRV::transExecutionMode() {
 }
 
 bool LLVMToSPIRV::transOCLKernelMetadata() {
-  NamedMDNode *KernelMDs = M->getNamedMetadata(SPIR_MD_KERNELS);
-  std::vector<std::string> ArgAccessQual;
-  if (!KernelMDs)
-    return true;
-
-  for (unsigned I = 0, E = KernelMDs->getNumOperands(); I < E; ++I) {
-    MDNode *KernelMD = KernelMDs->getOperand(I);
-    if (KernelMD->getNumOperands() == 0)
+  for (auto &F : *M) {
+    if (F.getCallingConv() != CallingConv::SPIR_KERNEL)
       continue;
-    Function *Kernel = mdconst::dyn_extract<Function>(KernelMD->getOperand(0));
 
-    SPIRVFunction *BF =
-        static_cast<SPIRVFunction *>(getTranslatedValue(Kernel));
+    SPIRVFunction *BF = static_cast<SPIRVFunction *>(getTranslatedValue(&F));
     assert(BF && "Kernel function should be translated first");
-    assert(Kernel && oclIsKernel(Kernel) &&
-           "Invalid kernel calling convention or metadata");
-    for (unsigned MI = 1, ME = KernelMD->getNumOperands(); MI < ME; ++MI) {
-      MDNode *MD = dyn_cast<MDNode>(KernelMD->getOperand(MI));
-      if (!MD)
-        continue;
-      MDString *NameMD = dyn_cast<MDString>(MD->getOperand(0));
-      if (!NameMD)
-        continue;
-      StringRef Name = NameMD->getString();
-      if (Name == SPIR_MD_KERNEL_ARG_TYPE_QUAL) {
-        foreachKernelArgMD(
-            MD, BF, [](const std::string &Str, SPIRVFunctionParameter *BA) {
-              if (Str.find("volatile") != std::string::npos)
-                BA->addDecorate(new SPIRVDecorate(DecorationVolatile, BA));
-              if (Str.find("restrict") != std::string::npos)
-                BA->addDecorate(
-                    new SPIRVDecorate(DecorationFuncParamAttr, BA,
-                                      FunctionParameterAttributeNoAlias));
-              if (Str.find("const") != std::string::npos)
-                BA->addDecorate(
-                    new SPIRVDecorate(DecorationFuncParamAttr, BA,
-                                      FunctionParameterAttributeNoWrite));
-            });
-      } else if (Name == SPIR_MD_KERNEL_ARG_NAME) {
-        foreachKernelArgMD(
-            MD, BF, [=](const std::string &Str, SPIRVFunctionParameter *BA) {
-              BM->setName(BA, Str);
-            });
-      }
+
+    if (auto *KernelArgTypeQual = F.getMetadata(SPIR_MD_KERNEL_ARG_TYPE_QUAL)) {
+      foreachKernelArgMD(
+          KernelArgTypeQual, BF,
+          [](const std::string &Str, SPIRVFunctionParameter *BA) {
+            if (Str.find("volatile") != std::string::npos)
+              BA->addDecorate(new SPIRVDecorate(DecorationVolatile, BA));
+            if (Str.find("restrict") != std::string::npos)
+              BA->addDecorate(
+                  new SPIRVDecorate(DecorationFuncParamAttr, BA,
+                                    FunctionParameterAttributeNoAlias));
+            if (Str.find("const") != std::string::npos)
+              BA->addDecorate(
+                  new SPIRVDecorate(DecorationFuncParamAttr, BA,
+                                    FunctionParameterAttributeNoWrite));
+          });
+    }
+    if (auto *KernelArgName = F.getMetadata(SPIR_MD_KERNEL_ARG_NAME)) {
+      foreachKernelArgMD(
+          KernelArgName, BF,
+          [=](const std::string &Str, SPIRVFunctionParameter *BA) {
+            BM->setName(BA, Str);
+          });
     }
   }
   return true;

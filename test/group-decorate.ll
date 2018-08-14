@@ -11,14 +11,13 @@ target triple = "spir-unknown-unknown"
 ; CHECK: 4 GroupDecorate [[GID2]]
 
 ; Function Attrs: nounwind readnone
-define spir_kernel void @test(<4 x i8> addrspace(1)* nocapture %src1, <4 x i8> addrspace(1)* nocapture %src2, <4 x i8> addrspace(1)* nocapture %dst) #0 {
+define spir_kernel void @test(<4 x i8> addrspace(1)* nocapture %src1, <4 x i8> addrspace(1)* nocapture %src2, <4 x i8> addrspace(1)* nocapture %dst) #0 !kernel_arg_addr_space !1 !kernel_arg_access_qual !2 !kernel_arg_type !3 !kernel_arg_base_type !5 !kernel_arg_type_qual !4 {
 entry:
   ret void
 }
 
 attributes #0 = { nounwind readnone }
 
-!opencl.kernels = !{!0}
 !opencl.enable.FP_CONTRACT = !{}
 !opencl.spir.version = !{!6}
 !opencl.ocl.version = !{!6}
@@ -26,12 +25,11 @@ attributes #0 = { nounwind readnone }
 !opencl.used.optional.core.features = !{!7}
 !opencl.compiler.options = !{!8}
 
-!0 = !{void (<4 x i8> addrspace(1)*, <4 x i8> addrspace(1)*, <4 x i8> addrspace(1)*)* @test, !1, !2, !3, !4, !5}
-!1 = !{!"kernel_arg_addr_space", i32 1, i32 1, i32 1}
-!2 = !{!"kernel_arg_access_qual", !"none", !"none", !"none"}
-!3 = !{!"kernel_arg_type", !"char4*", !"char4*", !"char4*"}
-!4 = !{!"kernel_arg_type_qual", !"const", !"const", !""}
-!5 = !{!"kernel_arg_base_type", !"char4*", !"char4*", !"char4*"}
+!1 = !{i32 1, i32 1, i32 1}
+!2 = !{!"none", !"none", !"none"}
+!3 = !{!"char4*", !"char4*", !"char4*"}
+!4 = !{!"const", !"const", !""}
+!5 = !{!"char4*", !"char4*", !"char4*"}
 !6 = !{i32 1, i32 2}
 !7 = !{}
 !8 = !{!""}
