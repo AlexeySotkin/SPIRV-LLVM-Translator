@@ -28,4 +28,4 @@ except KeyError:
 @LIT_SITE_CFG_IN_FOOTER@
 
 # Let the main config do the real work.
-lit_config.load_config(config, "@LLVM_SPIRV_SOURCE_DIR@/test/lit.cfg.py")
+lit_config.load_config(config, "@LLVM_SPIRV_SOURCE_DIR@/test/lit.cfg")
