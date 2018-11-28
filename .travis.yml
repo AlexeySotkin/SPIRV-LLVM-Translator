@@ -14,6 +14,7 @@ branches:
   only:
     - master
     - llvm_release_70
+    - tmp
 
 addons:
   apt:
@@ -81,10 +82,24 @@ script:
           -DBUILD_SHARED_LIBS=${SHARED_LIBS} \
           -DLLVM_BUILD_TOOLS=ON \
           -DLLVM_EXTERNAL_LIT="/usr/lib/llvm-7/build/utils/lit/lit.py" \
+          -DCMAKE_PREFIX_PATH="/usr/lib/llvm-7/" \
           -DLLVM_INCLUDE_TESTS=ON \
           -DCMAKE_INSTALL_PREFIX=../install/ \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-          -G "Unix Makefiles"
+          -DLLVM_LIT_ARGS="-sv --no-progress-bar --debug" \
+          -G "Unix Makefiles";
+        cmake --trace-expand .. \
+          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+          -DBUILD_SHARED_LIBS=${SHARED_LIBS} \
+          -DLLVM_BUILD_TOOLS=ON \
+          -DLLVM_EXTERNAL_LIT="/usr/lib/llvm-7/build/utils/lit/lit.py" \
+          -DCMAKE_PREFIX_PATH="/usr/lib/llvm-7/" \
+          -DLLVM_INCLUDE_TESTS=ON \
+          -DCMAKE_INSTALL_PREFIX=../install/ \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          -DLLVM_LIT_ARGS="-sv --no-progress-bar --debug" \
+          -G "Unix Makefiles";
+        cat /home/travis/build/AlexeySotkin/SPIRV-LLVM-Translator/build/test/lit.site.cfg.py;
       fi
     else
       cmake ../llvm/ \
@@ -94,7 +109,7 @@ script:
         -DLLVM_BUILD_TESTS=ON \
         -DLLVM_INCLUDE_TESTS=ON \
         -DSKIP_SPIRV_DEBUG_INFO_TESTS=ON \
-        -DLLVM_LIT_ARGS="-sv --no-progress-bar" \
+        -DLLVM_LIT_ARGS="-sv --no-progress-bar --debug" \
         -G "Unix Makefiles"
     fi
   - if [ $CHECK_FORMAT == "1" ]; then
@@ -106,5 +121,7 @@ script:
       ln -s build/compile_commands.json;
       ./utils/check_code_tidyness.sh;
     else
-      make $MAKE_TARGETS && make $MAKE_TEST_TARGET && if [ $BUILD_EXTERNAL == "1" ]; then make install; fi
+      make $MAKE_TARGETS VERBOSE=1 && dpkg -L llvm-7-tools && dpkg -L clang-tools-7 && llvm-config-7 --bindir && cat /home/travis/build/AlexeySotkin/SPIRV-LLVM-Translator/build/test/lit.site.cfg.py && make $MAKE_TEST_TARGET VERBOSE=1 && if [ $BUILD_EXTERNAL == "1" ]; then make install; fi;
+      ls -la /usr/local/clang-7.0.0/bin/;
+      ls -la /usr/lib/llvm-7/bin/;
     fi
