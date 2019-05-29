@@ -112,7 +112,7 @@ script:
 
 after_success:
   # Create tarball for deployment
-  - if [[ "${BUILD_EXTERNAL}" == "1" && "${SHARED_LIBS}" == "ON" && "${repo_token}" != "" ]]; then
+  - if [[ "${BUILD_EXTERNAL}" == "1" && "${SHARED_LIBS}" == "ON" && "${repo_token}" != "" && ! ${TRAVIS_COMMIT_MESSAGE} =~ "[travis_skip_deploy]" ]]; then
       export TAG=7.0.1-1;
       export TARBALL=SPIRV-LLVM-Translator-${TAG}-${TRAVIS_OS_NAME}-${BUILD_TYPE}.zip;
       cd ../install && find . -print | zip -@ ${TARBALL};
@@ -130,7 +130,7 @@ deploy:
   api_key: ${repo_token}
   on:
     branch: llvm_release_70
-    condition: ${BUILD_EXTERNAL} == 1 && ${SHARED_LIBS} == ON && ${repo_token}
+    condition: ${BUILD_EXTERNAL} == 1 && ${SHARED_LIBS} == ON && ${repo_token} && ! ${TRAVIS_COMMIT_MESSAGE} =~ "[travis_skip_deploy]"
   file: ${TARBALL}
   skip_cleanup: true
   overwrite: false
