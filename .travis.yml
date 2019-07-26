@@ -131,8 +131,8 @@ deploy:
     tags: true
     condition: ${BUILD_EXTERNAL} == 1 && ${SHARED_LIBS} == ON && ${repo_token}
   file: ${TARBALL}
-  name: ${NAME}
-  body: ${BODY}
+  name: "${NAME}"
+  body: "${BODY}"
   skip_cleanup: true
   overwrite: false
   prerelease: false
