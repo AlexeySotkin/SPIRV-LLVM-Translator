@@ -13,7 +13,10 @@ git:
 branches:
   only:
     - llvm_release_80
-    - if: tag IS present
+# Note that safelisting also prevents tagged commits from being built.
+# If you consistently tag your builds in the format v1.3 you can safelist them
+# all with regular expressions, for example /^v\d+\.\d+(\.\d+)?(-\S*)?$/.
+    - /^v\d+\.\d+\.\d+-\d$/
 
 addons:
   apt:
