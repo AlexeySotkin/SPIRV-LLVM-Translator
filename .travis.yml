@@ -13,8 +13,7 @@ git:
 branches:
   only:
     - llvm_release_80
-    - ${TRAVIS_TAG}
-    - v1.2.3
+    - if: tag IS present
 
 addons:
   apt:
@@ -67,7 +66,6 @@ matrix:
   fast_finish: true
 
 script:
-  - set -x
   - env
   - echo "TRAVIS_BRANCH=\"${TRAVIS_BRANCH}\""
   - echo "TRAVIS_TAG=\"${TRAVIS_TAG}\""
@@ -116,8 +114,10 @@ script:
     fi
 
 before_deploy:
-  - export NAME=$(git tag -l \"${TRAVIS_TAG}\" --format=\"%\(subject\)\")
-  - export BODY=$(git tag -l \"${TRAVIS_TAG}\" --format=\"%\(body\)\")
+  - export NAME=$(git tag -l ${TRAVIS_TAG} --format="%(subject)")
+  - echo $NAME
+  - export BODY=$(git tag -l ${TRAVIS_TAG} --format="%(body)")
+  - echo $BODY
   - export TARBALL=SPIRV-LLVM-Translator-${TRAVIS_TAG}-${TRAVIS_OS_NAME}-${BUILD_TYPE}.zip;
   - cd ../install && find . -print | zip -@ ${TARBALL};
 
