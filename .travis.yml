@@ -130,11 +130,12 @@ script:
     fi
 
 before_deploy:
-  # Tag the current master top of the tree as "dev-build".
   # Travis CI relies on the tag name to push to the correct release.
+  # Tag the current master top of the tree as "dev-build".
   # We must be very carefull with "git push -f" and allow it ONLY
-  # for the "dev-bulid" tag.
+  # for the "dev-bulid" tag!
   - if [ "${TRAVIS_BRANCH}" == "master" && -z "${TRAVIS_TAG}" ]; then
+      export TRAVIS_TAG=dev-build
       git config --global user.name "Travis CI";
       git config --global user.email "builds@travis-ci.org";
       git tag -f ${TRAVIS_TAG}
