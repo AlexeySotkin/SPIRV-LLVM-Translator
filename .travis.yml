@@ -129,39 +129,43 @@ script:
       make $MAKE_TARGETS && make $MAKE_TEST_TARGET && if [ $BUILD_EXTERNAL == "1" ]; then make install; fi
     fi
 
-# by setting TRAVIS_TAG we can trigger deploy, due to on.tags: true
+# by setting TRAVIS_TAG we trigger deploy, due to on.tags: true
 after_success:
-  - if: branch = master
-  - export TRAVIS_TAG=dev-build;
-#    env: TRAVIS_TAG=dev-build
-#  - if [ "${TRAVIS_BRANCH}" == "master" ]; then
-#      export TRAVIS_TAG=dev-build;
-#    fi
+  - if [ "${TRAVIS_BRANCH}" == "master" && -z "${TRAVIS_TAG}" ]; then
+      export TRAVIS_TAG=dev-build;
+    fi
       
 
 before_deploy:
+  # Tag the current master top of the tree as "dev-build".
+  # Travis CI relies on the tag name to push to the correct release.
+  # We must be very carefull with "git push -f" and allow it ONLY for dev-bulid tag.
+  - if [ "${TRAVIS_TAG}" == "dev-build" ]; then
+      git config --global user.name "Travis CI";
+      git config --global user.email "builds@travis-ci.org";
+      git tag -f ${TRAVIS_TAG} -a -m "Latest development build $(date -u +'%F %R %Z')";
+      git push -f https://${repo_token}@github.com/${TRAVIS_REPO_SLUG} --tags;
+    fi
   # Create tarball for deployment
   - echo ${TRAVIS_COMMIT} > ../install/version.txt;
   - export TARBALL=SPIRV-LLVM-Translator-${TRAVIS_TAG}-${TRAVIS_OS_NAME}-${BUILD_TYPE}.zip;
   - cd ../install && find . -print | zip -@ ${TARBALL};
-  # Tag the current master top of the tree as "dev-build".
-  # Travis CI relies on the tag name to push to the correct release.
-  - if [ "${TRAVIS_BRANCH}" == "master" ]; then
-      git config --global user.name "Travis CI";
-      git config --global user.email "builds@travis-ci.org";
-      git tag -f ${TRAVIS_TAG};
-      git push -f https://${repo_token}@github.com/${TRAVIS_REPO_SLUG} --tags;
-    fi
 
 deploy:
-  provider: releases
-  api_key: ${repo_token}
-  on:
-    tags: true
-    condition: ${BUILD_EXTERNAL} == 1 && ${SHARED_LIBS} == ON && ${repo_token}
-  file: ${TARBALL}
-  name: Latest development build $(date -u +'%F %R %Z')
-  skip_cleanup: true
-  overwrite: true
-  prerelease: true
-  draft: true
+  - provider: releases
+    api_key: ${repo_token}
+    on:
+      tags: true
+      condition: ${BUILD_EXTERNAL} == 1 && ${SHARED_LIBS} == ON && ${repo_token}
+    file: ${TARBALL}
+    skip_cleanup: true
+    overwrite: false
+  - provider: releases
+    api_key: ${repo_token}
+    on:
+      branch: master
+      condition: ${BUILD_EXTERNAL} == 1 && ${SHARED_LIBS} == ON && ${repo_token}
+    file: ${TARBALL}
+    skip_cleanup: true
+    overwrite: true
+    prerelease: true
