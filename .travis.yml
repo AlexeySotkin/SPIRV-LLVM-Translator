@@ -134,12 +134,12 @@ before_deploy:
   # Travis CI relies on the tag name to push to the correct release.
   # We must be very carefull with "git push -f" and allow it ONLY
   # for the "dev-bulid" tag.
-#  - if [ "${TRAVIS_BRANCH}" == "master" && -z "${TRAVIS_TAG}" ]; then
-#      git config --global user.name "Travis CI";
-#      git config --global user.email "builds@travis-ci.org";
-#      git tag -f ${TRAVIS_TAG}
-#      git push -f https://${repo_token}@github.com/${TRAVIS_REPO_SLUG} --tags;
-#    fi
+  - if [ "${TRAVIS_BRANCH}" == "master" && -z "${TRAVIS_TAG}" ]; then
+      git config --global user.name "Travis CI";
+      git config --global user.email "builds@travis-ci.org";
+      git tag -f ${TRAVIS_TAG}
+      git push -f https://${repo_token}@github.com/${TRAVIS_REPO_SLUG} --tags;
+    fi
   # Create tarball for deployment
   - echo ${TRAVIS_COMMIT} > ../install/version.txt;
   - export TARBALL=SPIRV-LLVM-Translator-${TRAVIS_TAG}-${TRAVIS_OS_NAME}-${BUILD_TYPE}.zip;
