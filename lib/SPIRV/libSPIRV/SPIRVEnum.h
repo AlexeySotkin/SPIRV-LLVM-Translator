@@ -119,7 +119,8 @@ enum SPIRVExtensionKind {
   SPV_INTEL_device_side_avc_motion_estimation,
   SPV_INTEL_fpga_reg,
   SPV_INTEL_fpga_memory_attributes,
-  SPV_INTEL_unstructured_loop_controls
+  SPV_INTEL_unstructured_loop_controls,
+  SPV_INTEL_function_pointers
 };
 
 typedef std::set<SPIRVExtensionKind> SPIRVExtSet;
@@ -133,6 +134,7 @@ template <> inline void SPIRVMap<SPIRVExtensionKind, std::string>::init() {
   add(SPV_KHR_no_integer_wrap_decoration, "SPV_KHR_no_integer_wrap_decoration");
   add(SPV_INTEL_fpga_reg, "SPV_INTEL_fpga_reg");
   add(SPV_INTEL_fpga_memory_attributes, "SPV_INTEL_fpga_memory_attributes");
+  add(SPV_INTEL_function_pointers, "SPV_INTEL_function_pointers");
 }
 
 template <> inline void SPIRVMap<SPIRVExtInstSetKind, std::string>::init() {
@@ -266,6 +268,8 @@ template <> inline void SPIRVMap<SPIRVStorageClassKind, SPIRVCapVec>::init() {
   ADD_VEC_INIT(StorageClassGeneric, {CapabilityGenericPointer});
   ADD_VEC_INIT(StorageClassPushConstant, {CapabilityShader});
   ADD_VEC_INIT(StorageClassAtomicCounter, {CapabilityAtomicStorage});
+  ADD_VEC_INIT(StorageClassCodeSectionINTEL, {CapabilityFunctionPointersINTEL});
+
 }
 
 template <> inline void SPIRVMap<SPIRVImageDimKind, SPIRVCapVec>::init() {
@@ -376,6 +380,7 @@ template <> inline void SPIRVMap<Decoration, SPIRVCapVec>::init() {
   ADD_VEC_INIT(DecorationSimpleDualPortINTEL,
                {CapabilityFPGAMemoryAttributesINTEL});
   ADD_VEC_INIT(DecorationMergeINTEL, {CapabilityFPGAMemoryAttributesINTEL});
+  ADD_VEC_INIT(DecorationReferencedIndirectlyINTEL, {CapabilityIndirectReferencesINTEL});
 }
 
 template <> inline void SPIRVMap<BuiltIn, SPIRVCapVec>::init() {

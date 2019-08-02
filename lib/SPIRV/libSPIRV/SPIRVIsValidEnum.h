@@ -160,6 +160,7 @@ inline bool isValid(spv::StorageClass V) {
   case StorageClassPushConstant:
   case StorageClassAtomicCounter:
   case StorageClassImage:
+  case StorageClassCodeSectionINTEL:
     return true;
   default:
     return false;
@@ -405,6 +406,7 @@ inline bool isValid(spv::Decoration V) {
   case DecorationMaxPrivateCopiesINTEL:
   case DecorationSinglepumpINTEL:
   case DecorationDoublepumpINTEL:
+  case DecorationReferencedIndirectlyINTEL:
     return true;
   default:
     return false;
