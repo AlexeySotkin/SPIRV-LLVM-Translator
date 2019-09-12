@@ -33,6 +33,7 @@ addons:
     - clang-format-9
     - clang-tidy-9
     - libclang-9-dev
+    - lldb-9
     - spirv-tools
 
 compiler:
@@ -94,10 +95,6 @@ script:
   - |
     if [ $BUILD_EXTERNAL == "1" ]; then
       if [ $CHECK_FORMAT != "1" ]; then
-        # For some reason cmake expects lit-cpuid to be installed.
-        # But llvm-9 packages in the current state do not provide it.
-        # As a temporary workaround we create a dummy file just to pacify cmake.
-        sudo touch /usr/lib/llvm-9/bin/lit-cpuid
         cmake .. \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
           -DBUILD_SHARED_LIBS=${SHARED_LIBS} \
