@@ -5,7 +5,7 @@
 ; RUN: llc -mtriple=%triple -stop-before=finalize-isel -pre-RA-sched=linearize < %t.ll | FileCheck %s
 
 ; RUN: llvm-spirv %t.spv -to-text -o - | FileCheck --check-prefix CHECK-SPIRV %s
-; CHECK-SPIRV: ExtInstImport [[Set:[0-9]+]] "SPIRV.debug"
+; CHECK-SPIRV: ExtInstImport [[Set:[0-9]+]] "OpenCL.DebugInfo.100"
 ; CHECK-SPIRV: TypeVoid [[Void:[0-9]+]]
 ; CHECK-SPIRV: ExtInst [[Void]] {{[0-9]+}} [[Set]] DebugValue
 

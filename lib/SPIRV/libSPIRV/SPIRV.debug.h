@@ -5,6 +5,7 @@
 
 namespace SPIRVDebug {
 
+static const char ExtInstSetName[] = "OpenCL.DebugInfo.100";
 const unsigned int DebugInfoVersion = 0x00010000;
 
 // clang-format off
