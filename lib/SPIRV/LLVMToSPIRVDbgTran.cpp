@@ -460,7 +460,8 @@ LLVMToSPIRVDbgTran::transDbgCompilationUnit(const DICompileUnit *CU) {
   Ops[SPIRVDebugInfoVersionIdx] = SPIRVDebug::DebugInfoVersion;
   Ops[DWARFVersionIdx] = M->getDwarfVersion();
   Ops[SourceIdx] = getSource(CU)->getId();
-  Ops[LanguageIdx] = CU->getSourceLanguage();
+  Ops[LanguageIdx] = spv::SourceLanguageUnknown;
+  SPIRV::DbgSourceLangMap::find(CU->getSourceLanguage(), &Ops[LanguageIdx]);
   // Cache CU in a member.
   SPIRVCU = static_cast<SPIRVExtInst *>(
       BM->addDebugInfo(SPIRVDebug::CompilationUnit, getVoidTy(), Ops));
@@ -487,7 +488,7 @@ SPIRVEntry *LLVMToSPIRVDbgTran::transDbgPointerType(const DIDerivedType *PT) {
   SPIRVWordVec Ops(OperandCount);
   SPIRVEntry *Base = transDbgEntry(PT->getBaseType());
   Ops[BaseTypeIdx] = Base->getId();
-  Ops[StorageClassIdx] = ~0U; // all ones denote no address space
+  Ops[StorageClassIdx] = spv::StorageClassFunction;
   Optional<unsigned> AS = PT->getDWARFAddressSpace();
   if (AS.hasValue()) {
     SPIRAddressSpace SPIRAS = static_cast<SPIRAddressSpace>(AS.getValue());

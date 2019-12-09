@@ -43,6 +43,7 @@
 #include "LLVMSPIRVOpts.h"
 #include "SPIRVOpCode.h"
 #include "spirv.hpp"
+#include "SPIRV.debug.h"
 #include <cstdint>
 using namespace spv;
 
@@ -123,7 +124,7 @@ template <> inline void SPIRVMap<ExtensionID, std::string>::init() {
 
 template <> inline void SPIRVMap<SPIRVExtInstSetKind, std::string>::init() {
   add(SPIRVEIS_OpenCL, "OpenCL.std");
-  add(SPIRVEIS_Debug, "SPIRV.debug");
+  add(SPIRVEIS_Debug, SPIRVDebug::ExtInstSetName);
 }
 typedef SPIRVMap<SPIRVExtInstSetKind, std::string> SPIRVBuiltinSetNameMap;
 

@@ -1,10 +1,12 @@
 #ifndef SPIRV_DEBUG_H
 #define SPIRV_DEBUG_H
 #include "SPIRVUtil.h"
+#include "spirv.hpp"
 #include "llvm/BinaryFormat/Dwarf.h"
 
 namespace SPIRVDebug {
 
+static const char ExtInstSetName[] = "OpenCL.DebugInfo.100";
 const unsigned int DebugInfoVersion = 0x00010000;
 
 // clang-format off
@@ -449,12 +451,12 @@ namespace ImportedEntity {
 enum {
   NameIdx      = 0,
   TagIdx       = 1,
-  SourceIdx    = 3,
-  EntityIdx    = 4,
-  LineIdx      = 5,
-  ColumnIdx    = 6,
-  ParentIdx    = 7,
-  OperandCount = 8
+  SourceIdx    = 2,
+  EntityIdx    = 3,
+  LineIdx      = 4,
+  ColumnIdx    = 5,
+  ParentIdx    = 6,
+  OperandCount = 7
 };
 }
 
@@ -464,6 +466,13 @@ enum {
 using namespace llvm;
 
 namespace SPIRV {
+typedef SPIRVMap<unsigned, unsigned> DbgSourceLangMap;
+template<>
+inline void DbgSourceLangMap::init() {
+  add(dwarf::DW_LANG_C99, spv::SourceLanguageOpenCL_C);
+  add(dwarf::DW_LANG_C_plus_plus, spv::SourceLanguageOpenCL_CPP);
+}
+
 typedef SPIRVMap<dwarf::TypeKind, SPIRVDebug::EncodingTag> DbgEncodingMap;
 template <>
 inline void DbgEncodingMap::init() {

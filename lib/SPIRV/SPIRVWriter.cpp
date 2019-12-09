@@ -1110,7 +1110,7 @@ bool LLVMToSPIRV::transBuiltinSet() {
   if (!BM->importBuiltinSet("OpenCL.std", &EISId))
     return false;
   if (SPIRVMDWalker(*M).getNamedMD("llvm.dbg.cu")) {
-    if (!BM->importBuiltinSet("SPIRV.debug", &EISId))
+    if (!BM->importBuiltinSet(SPIRVDebug::ExtInstSetName, &EISId))
       return false;
   }
   return true;
