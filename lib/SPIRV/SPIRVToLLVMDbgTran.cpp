@@ -157,7 +157,7 @@ DIType *SPIRVToLLVMDbgTran::transTypePointer(const SPIRVExtInst *DebugInst) {
   if (BM->getEntry(Ops[BaseTypeIdx])->getOpCode() != OpTypeVoid)
     PointeeTy = transDebugInst<DIType>(BM->get<SPIRVExtInst>(Ops[BaseTypeIdx]));
   Optional<unsigned> AS;
-  if (Ops[StorageClassIdx] != ~0U) {
+  if (Ops[StorageClassIdx] != spv::StorageClassFunction) {
     auto SC = static_cast<SPIRVStorageClassKind>(Ops[StorageClassIdx]);
     AS = SPIRSPIRVAddrSpaceMap::rmap(SC);
   }
