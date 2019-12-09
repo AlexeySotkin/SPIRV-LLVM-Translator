@@ -118,7 +118,8 @@ SPIRVToLLVMDbgTran::transCompileUnit(const SPIRVExtInst *DebugInst) {
   SPIRVExtInst *Source = BM->get<SPIRVExtInst>(Ops[SourceIdx]);
   SPIRVId FileId = Source->getArguments()[SPIRVDebug::Operand::Source::FileIdx];
   std::string File = getString(FileId);
-  unsigned SourceLang = Ops[LanguageIdx];
+  unsigned SourceLang = dwarf::DW_LANG_C99;
+  SPIRV::DbgSourceLangMap::rfind(Ops[LanguageIdx], &SourceLang);
   CU = Builder.createCompileUnit(SourceLang, getDIFile(File), "spirv", false,
                                  "", 0);
   return CU;

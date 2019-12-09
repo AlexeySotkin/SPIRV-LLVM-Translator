@@ -1,6 +1,7 @@
 #ifndef SPIRV_DEBUG_H
 #define SPIRV_DEBUG_H
 #include "SPIRVUtil.h"
+#include "spirv.hpp"
 #include "llvm/BinaryFormat/Dwarf.h"
 
 namespace SPIRVDebug {
@@ -465,6 +466,13 @@ enum {
 using namespace llvm;
 
 namespace SPIRV {
+typedef SPIRVMap<unsigned, unsigned> DbgSourceLangMap;
+template<>
+inline void DbgSourceLangMap::init() {
+  add(dwarf::DW_LANG_C99, spv::SourceLanguageOpenCL_C);
+  add(dwarf::DW_LANG_C_plus_plus, spv::SourceLanguageOpenCL_CPP);
+}
+
 typedef SPIRVMap<dwarf::TypeKind, SPIRVDebug::EncodingTag> DbgEncodingMap;
 template <>
 inline void DbgEncodingMap::init() {
