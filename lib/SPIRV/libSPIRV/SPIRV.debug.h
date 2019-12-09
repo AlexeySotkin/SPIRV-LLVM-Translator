@@ -450,12 +450,12 @@ namespace ImportedEntity {
 enum {
   NameIdx      = 0,
   TagIdx       = 1,
-  SourceIdx    = 3,
-  EntityIdx    = 4,
-  LineIdx      = 5,
-  ColumnIdx    = 6,
-  ParentIdx    = 7,
-  OperandCount = 8
+  SourceIdx    = 2,
+  EntityIdx    = 3,
+  LineIdx      = 4,
+  ColumnIdx    = 5,
+  ParentIdx    = 6,
+  OperandCount = 7
 };
 }
 
