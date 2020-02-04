@@ -49,6 +49,7 @@
 #include "llvm/Support/Debug.h"
 
 #include <set>
+#include <vector>
 
 using namespace llvm;
 using namespace SPIRV;
@@ -112,9 +113,10 @@ bool SPIRVRegularizeLLVM::regularize() {
       continue;
     }
 
-    for (auto BI = F->begin(), BE = F->end(); BI != BE; ++BI) {
-      for (auto II = BI->begin(), IE = BI->end(); II != IE; ++II) {
-        if (auto Call = dyn_cast<CallInst>(II)) {
+    std::vector<Instruction*> ToErase;
+    for (BasicBlock &BB : *F) {
+      for (Instruction &II : BB) {
+        if (auto Call = dyn_cast<CallInst>(&II)) {
           Call->setTailCall(false);
           Function *CF = Call->getCalledFunction();
           if (CF && CF->isIntrinsic())
@@ -122,7 +124,7 @@ bool SPIRVRegularizeLLVM::regularize() {
         }
 
         // Remove optimization info not supported by SPIRV
-        if (auto BO = dyn_cast<BinaryOperator>(II)) {
+        if (auto BO = dyn_cast<BinaryOperator>(&II)) {
           if (isa<PossiblyExactOperator>(BO) && BO->isExact())
             BO->setIsExact(false);
         }
@@ -133,12 +135,55 @@ bool SPIRVRegularizeLLVM::regularize() {
             "range",
         };
         for (auto &MDName : MDs) {
-          if (II->getMetadata(MDName)) {
-            II->setMetadata(MDName, nullptr);
+          if (II.getMetadata(MDName)) {
+            II.setMetadata(MDName, nullptr);
+          }
+        }
+        if (auto cmpxchg = dyn_cast<AtomicCmpXchgInst>(&II)) {
+          Value *Ptr = cmpxchg->getPointerOperand();
+          Value *MemoryScope = getInt32(M, cmpxchg->getSyncScopeID());
+          auto SuccessOrder = static_cast<OCLMemOrderKind>(
+              llvm::toCABI(cmpxchg->getSuccessOrdering()));
+          auto FailureOrder = static_cast<OCLMemOrderKind>(
+              llvm::toCABI(cmpxchg->getFailureOrdering()));
+          Value *EqualSem = getInt32(M, OCLMemOrderMap::map(SuccessOrder));
+          Value *UnequalSem = getInt32(M, OCLMemOrderMap::map(FailureOrder));
+          Value *Val = cmpxchg->getNewValOperand();
+          Value *Comparator = cmpxchg->getCompareOperand();
+
+          llvm::ArrayRef<llvm::Value *> Args = {
+              Ptr, MemoryScope, EqualSem, UnequalSem, Val, Comparator};
+          AttributeList Attrs{};
+          StringRef RetName = "cmpxchg.res";
+          auto Res = addCallInstSPIRV(M, "__spirv_AtomicCompareExchange",
+                                      cmpxchg->getCompareOperand()->getType(),
+                                      Args, &Attrs, &II, RetName);
+          for (User *U : cmpxchg->users()) {
+            if (auto *Extract = dyn_cast<ExtractValueInst>(U)) {
+              switch (Extract->getIndices()[0]) {
+              case 0:
+                Extract->replaceAllUsesWith(Res);
+                break;
+              case 1: {
+                auto *Cmp = new ICmpInst(Extract, CmpInst::ICMP_EQ, Res,
+                                         Comparator, "cmpxchg.success");
+                Extract->replaceAllUsesWith(Cmp);
+                break;
+              }
+              default:
+                llvm_unreachable("Unxpected cmpxchg pattern");
+              }
+              Extract->eraseFromParent();
+            }
+          }
+          if (cmpxchg->hasNUses(0)) {
+            ToErase.push_back(cmpxchg);
           }
         }
       }
     }
+    for (Instruction* V : ToErase)
+      V->eraseFromParent();
   }
 
   std::string Err;
