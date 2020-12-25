@@ -109,6 +109,7 @@ bool SPIRVLowerConstExpr::runOnModule(Module &Module) {
 void SPIRVLowerConstExpr::visit(Module *M) {
   for (auto &I : M->functions()) {
     std::list<Instruction *> WorkList;
+    std::unordered_map<ConstantExpr *, Instruction *> ConstExprMap;
     for (auto &BI : I) {
       for (auto &II : BI) {
         WorkList.push_back(&II);
@@ -118,14 +119,21 @@ void SPIRVLowerConstExpr::visit(Module *M) {
     while (!WorkList.empty()) {
       auto II = WorkList.front();
 
-      auto LowerOp = [&II, &FBegin, &I](Value *V) -> Value * {
+      auto LowerOp = [&II, &FBegin, &I, &ConstExprMap](Value *V) -> Value * {
         if (isa<Function>(V))
           return V;
         auto *CE = cast<ConstantExpr>(V);
         SPIRVDBG(dbgs() << "[lowerConstantExpressions] " << *CE;)
-        auto ReplInst = CE->getAsInstruction();
-        auto InsPoint = II->getParent() == &*FBegin ? II : &FBegin->back();
-        ReplInst->insertBefore(InsPoint);
+        auto it = ConstExprMap.find(CE);
+        Instruction *ReplInst = nullptr;
+        if (it != ConstExprMap.end()) {
+          ReplInst = it->second;
+        } else {
+          ReplInst = CE->getAsInstruction();
+          ConstExprMap[CE] = ReplInst;
+          auto InsPoint = II->getParent() == &*FBegin ? II : &FBegin->back();
+          ReplInst->insertBefore(InsPoint);
+        }
         SPIRVDBG(dbgs() << " -> " << *ReplInst << '\n';)
         std::vector<Instruction *> Users;
         // Do not replace use during iteration of use. Do it in another loop
