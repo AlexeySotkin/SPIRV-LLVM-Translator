@@ -106,12 +106,23 @@ bool SPIRVLowerConstExpr::runOnModule(Module &Module) {
 /// is replaced by one instruction.
 /// ToDo: remove redundant instructions for common subexpression
 
+void processFunction(const Function &F) {
+  for (auto &BB : F) {
+    
+  }
+}
+
 void SPIRVLowerConstExpr::visit(Module *M) {
+  for (auto &F : M->functions()) {
+    processFunction(F);
+  }
+  return;
   for (auto &I : M->functions()) {
     std::list<Instruction *> WorkList;
     std::unordered_map<ConstantExpr *, Instruction *> ConstExprMap;
     for (auto &BI : I) {
       for (auto &II : BI) {
+        SPIRVDBG(dbgs() << "Adding " << II << '\n';)
         WorkList.push_back(&II);
       }
     }
