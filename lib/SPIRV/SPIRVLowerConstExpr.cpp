@@ -35,6 +35,7 @@
 // This file implements regularization of LLVM module for SPIR-V.
 //
 //===----------------------------------------------------------------------===//
+#include <unordered_map>
 #define DEBUG_TYPE "spv-lower-const-expr"
 
 #include "OCLUtil.h"
@@ -106,17 +107,109 @@ bool SPIRVLowerConstExpr::runOnModule(Module &Module) {
 /// is replaced by one instruction.
 /// ToDo: remove redundant instructions for common subexpression
 
-void processFunction(const Function &F) {
-  for (auto &BB : F) {
-    
+Instruction * LowerOp(ConstantExpr *CE, Instruction *InsPoint, Function *F) {
+  SPIRVDBG(dbgs() << "[lowerConstantExpressions] " << *CE;)
+//  auto it = ConstExprMap.find(CE);
+  Instruction *ReplInst = nullptr;
+//  if (it != ConstExprMap.end()) {
+//    ReplInst = it->second;
+//  } else {
+    ReplInst = CE->getAsInstruction();
+//    ConstExprMap[CE] = ReplInst;
+//    auto InsPoint = II->getParent() == &*FBegin ? II : &FBegin->back();
+    ReplInst->insertBefore(InsPoint);
+//  }
+  SPIRVDBG(dbgs() << " -> " << *ReplInst << '\n';)
+  std::vector<Instruction *> Users;
+  // Do not replace use during iteration of use. Do it in another loop
+  for (auto U : CE->users()) {
+    SPIRVDBG(dbgs() << "[lowerConstantExpressions] Use: " << *U << '\n';)
+    if (auto InstUser = dyn_cast<Instruction>(U)) {
+      // Only replace users in scope of current function
+      if (InstUser->getParent()->getParent() == F)
+        Users.push_back(InstUser);
+    }
+  }
+  for (auto &User : Users)
+    User->replaceUsesOfWith(CE, ReplInst);
+  return ReplInst;
+}
+
+
+Instruction *
+processConstExprOperand(ConstantExpr *CE, Instruction *InsPoint, Function *F) {
+  std::unordered_map<unsigned, Instruction *> OpMap;
+  for (unsigned I = 0, E = CE->getNumOperands(); I != E; ++I) {
+    if (ConstantExpr *CSE = dyn_cast_or_null<ConstantExpr>(CE->getOperand(I))) {
+      OpMap[I] = processConstExprOperand(CSE, InsPoint, F);
+    }
+  }
+  Instruction *NewInst = LowerOp(CE, InsPoint, F);
+  for (auto &It : OpMap) {
+    NewInst->setOperand(It.first, It.second);
+  }
+  return NewInst;
+}
+
+void processFunction(Function &F) {
+  std::unordered_map<ConstantExpr *, Instruction *> ConstExprMap;
+  BasicBlock *EntryBB = &*F.begin();
+  for (BasicBlock &BB : F) {
+    for (Instruction &I : BB) {
+      Instruction &InsertPoint = (I.getParent() == EntryBB) ? I : EntryBB->back();
+      for (unsigned It = 0, E = I.getNumOperands(); It != E; ++It) {
+        Value *Op = I.getOperand(It);
+        if (auto *CE = dyn_cast<ConstantExpr>(Op)) {
+          processConstExprOperand(CE, &InsertPoint, &F);
+        } else if (auto *MDAsVal = dyn_cast<MetadataAsValue>(Op)) {
+          Metadata *MD = MDAsVal->getMetadata();
+          if (auto ConstMD = dyn_cast<ConstantAsMetadata>(MD)) {
+            Constant *C = ConstMD->getValue();
+            if (auto CE = dyn_cast<ConstantExpr>(C)) {
+              Instruction *ReplInst = processConstExprOperand(CE, &InsertPoint, &F);
+              Metadata *RepMD = ValueAsMetadata::get(ReplInst);
+              Value *RepMDVal = MetadataAsValue::get(F.getContext(), RepMD);
+              I.setOperand(It, RepMDVal);
+            }
+          }
+        } else if (auto *Vec = dyn_cast<ConstantVector>(Op)) {
+          if (!std::all_of(Vec->op_begin(), Vec->op_end(), [](Value *V) {
+              return isa<ConstantExpr>(V) || isa<Function>(V);}))
+            continue;
+          // Expand a vector of constexprs and construct it back with series of
+          // insertelement instructions
+          std::list<Value *> OpList;
+          std::transform(Vec->op_begin(), Vec->op_end(),
+                         std::back_inserter(OpList),
+                         [&](Value *V) { return processConstExprOperand(static_cast<ConstantExpr*>(V), &InsertPoint, &F); });
+          Value *Repl = nullptr;
+          unsigned Idx = 0;
+          PHINode *PhiInst = dyn_cast<PHINode>(&I);
+          auto *InsPoint = PhiInst ? &PhiInst->getIncomingBlock(It)->back() : &I;
+          std::list<Instruction *> ReplList;
+          for (auto *V : OpList) {
+            if (auto *Inst = dyn_cast<Instruction>(V))
+              ReplList.push_back(Inst);
+            Repl = InsertElementInst::Create(
+                (Repl ? Repl : UndefValue::get(Vec->getType())), V,
+                ConstantInt::get(Type::getInt32Ty(F.getContext()), Idx++), "",
+                InsPoint);
+          }
+          I.setOperand(It, Repl);
+        }
+      }
+    }
   }
 }
 
 void SPIRVLowerConstExpr::visit(Module *M) {
-  for (auto &F : M->functions()) {
-    processFunction(F);
+  for (Function &F : M->functions()) {
+    if (!F.empty())
+      processFunction(F);
   }
+
   return;
+
   for (auto &I : M->functions()) {
     std::list<Instruction *> WorkList;
     std::unordered_map<ConstantExpr *, Instruction *> ConstExprMap;

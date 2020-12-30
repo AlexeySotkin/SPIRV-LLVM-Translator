@@ -1,10 +1,16 @@
 ; RUN: llvm-as < %s -o %t.bc
+; RUN: llvm-spirv %t.bc -s -o - | llvm-dis -o - | FileCheck %s --check-prefix=CHECK-LLVM
 ; RUN: llvm-spirv %t.bc -o %t.spv
 ; RUN: spirv-val %t.spv
 ; RUN: llvm-spirv -to-text %t.spv -o - | FileCheck %s
 
-; CHECK:
-; InBoundsPtrAccessChain 21 22 20 18 15
+; CHECK-LLVM: %2 = addrspacecast [2 x i64] addrspace(1)* @data to [2 x i64] addrspace(4)*
+; CHECK-LLVM: %3 = getelementptr inbounds [2 x i64], [2 x i64] addrspace(4)* %2, i64 0, i32 0
+; CHECK-LLVM-NOT:  addrspacecast [2 x i64] addrspace(1)* @data to [2 x i64] addrspace(4)*
+; CHECK-LLVM: %4 = getelementptr inbounds [2 x i64], [2 x i64] addrspace(4)* %2, i64 1, i32 0
+; CHECK-LLVM: %5 = select i1 %1, i64 addrspace(4)* %3, i64 addrspace(4)* %4
+
+; CHECK: InBoundsPtrAccessChain
 ; PtrCastToGeneric 19 20 9
 ; InBoundsPtrAccessChain 21 25 20 24 15
 ; Select 21 26 17 22 25
