@@ -147,20 +147,20 @@ struct LowerConstExprVisitor : public InstVisitor<LowerConstExprVisitor> {
   }
 
   void visitInstruction(Instruction &I) {
-      //Function *F = I.getParent()->getParent();
       BasicBlock *EntryBB = &*F->begin();
       Instruction &InsertPoint = (I.getParent() == EntryBB) ? I : EntryBB->back();
       for (unsigned It = 0, E = I.getNumOperands(); It != E; ++It) {
         Value *Op = I.getOperand(It);
+        Value *ReplInst = nullptr;
         if (auto *CE = dyn_cast<ConstantExpr>(Op)) {
-          I.setOperand(It, lowerConstExprOperand(CE, &InsertPoint));
+          ReplInst = lowerConstExprOperand(CE, &InsertPoint);
         } else if (auto *MDAsVal = dyn_cast<MetadataAsValue>(Op)) {
-          if (Value *ReplInst =  lowerConstMetadataOperand(MDAsVal->getMetadata(), InsertPoint))
-            I.setOperand(It, ReplInst);
+          ReplInst =  lowerConstMetadataOperand(MDAsVal->getMetadata(), InsertPoint);
         } else if (auto *Vec = dyn_cast<ConstantVector>(Op)) {
-          if (Value *ReplInst = lowerConstVectorOperand(Vec, I, InsertPoint, It))
-            I.setOperand(It, ReplInst);
+          ReplInst = lowerConstVectorOperand(Vec, I, InsertPoint, It);
         }
+        if (ReplInst)
+          I.setOperand(It, ReplInst);
       }
     }
 };
