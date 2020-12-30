@@ -65,6 +65,7 @@ void initializeSPIRVToOCL20Pass(PassRegistry &);
 void initializePreprocessMetadataPass(PassRegistry &);
 
 class ModulePass;
+class FunctionPass;
 } // namespace llvm
 
 #include "llvm/IR/Module.h"
@@ -172,7 +173,7 @@ ModulePass *createOCLTypeToSPIRV();
 ModulePass *createSPIRVLowerBool();
 
 /// Create a pass for lowering constant expressions to instructions.
-ModulePass *createSPIRVLowerConstExpr();
+FunctionPass *createSPIRVLowerConstExpr();
 
 /// Create a pass for lowering SPIR 2.0 blocks to functions calls.
 ModulePass *createSPIRVLowerSPIRBlocks();
