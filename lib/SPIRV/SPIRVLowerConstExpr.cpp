@@ -109,16 +109,9 @@ bool SPIRVLowerConstExpr::runOnModule(Module &Module) {
 
 Instruction * LowerOp(ConstantExpr *CE, Instruction *InsPoint, Function *F) {
   SPIRVDBG(dbgs() << "[lowerConstantExpressions] " << *CE;)
-//  auto it = ConstExprMap.find(CE);
   Instruction *ReplInst = nullptr;
-//  if (it != ConstExprMap.end()) {
-//    ReplInst = it->second;
-//  } else {
-    ReplInst = CE->getAsInstruction();
-//    ConstExprMap[CE] = ReplInst;
-//    auto InsPoint = II->getParent() == &*FBegin ? II : &FBegin->back();
-    ReplInst->insertBefore(InsPoint);
-//  }
+  ReplInst = CE->getAsInstruction();
+  ReplInst->insertBefore(InsPoint);
   SPIRVDBG(dbgs() << " -> " << *ReplInst << '\n';)
   std::vector<Instruction *> Users;
   // Do not replace use during iteration of use. Do it in another loop
@@ -137,17 +130,22 @@ Instruction * LowerOp(ConstantExpr *CE, Instruction *InsPoint, Function *F) {
 
 
 Instruction *
-processConstExprOperand(ConstantExpr *CE, Instruction *InsPoint, Function *F) {
+processConstExprOperand(ConstantExpr *CE, Instruction *InsPoint, Function *F,
+    std::unordered_map<ConstantExpr *, Instruction *>& ConstExprMap) {
+  auto It = ConstExprMap.find(CE);
+  if (It != ConstExprMap.end())
+    return It->second;
   std::unordered_map<unsigned, Instruction *> OpMap;
   for (unsigned I = 0, E = CE->getNumOperands(); I != E; ++I) {
     if (ConstantExpr *CSE = dyn_cast_or_null<ConstantExpr>(CE->getOperand(I))) {
-      OpMap[I] = processConstExprOperand(CSE, InsPoint, F);
+      OpMap[I] = processConstExprOperand(CSE, InsPoint, F, ConstExprMap);
     }
   }
   Instruction *NewInst = LowerOp(CE, InsPoint, F);
   for (auto &It : OpMap) {
     NewInst->setOperand(It.first, It.second);
   }
+  ConstExprMap[CE] = NewInst;
   return NewInst;
 }
 
@@ -160,13 +158,13 @@ void processFunction(Function &F) {
       for (unsigned It = 0, E = I.getNumOperands(); It != E; ++It) {
         Value *Op = I.getOperand(It);
         if (auto *CE = dyn_cast<ConstantExpr>(Op)) {
-          processConstExprOperand(CE, &InsertPoint, &F);
+          processConstExprOperand(CE, &InsertPoint, &F, ConstExprMap);
         } else if (auto *MDAsVal = dyn_cast<MetadataAsValue>(Op)) {
           Metadata *MD = MDAsVal->getMetadata();
           if (auto ConstMD = dyn_cast<ConstantAsMetadata>(MD)) {
             Constant *C = ConstMD->getValue();
             if (auto CE = dyn_cast<ConstantExpr>(C)) {
-              Instruction *ReplInst = processConstExprOperand(CE, &InsertPoint, &F);
+              Instruction *ReplInst = processConstExprOperand(CE, &InsertPoint, &F, ConstExprMap);
               Metadata *RepMD = ValueAsMetadata::get(ReplInst);
               Value *RepMDVal = MetadataAsValue::get(F.getContext(), RepMD);
               I.setOperand(It, RepMDVal);
@@ -181,7 +179,7 @@ void processFunction(Function &F) {
           std::list<Value *> OpList;
           std::transform(Vec->op_begin(), Vec->op_end(),
                          std::back_inserter(OpList),
-                         [&](Value *V) { return processConstExprOperand(static_cast<ConstantExpr*>(V), &InsertPoint, &F); });
+                         [&](Value *V) { return processConstExprOperand(static_cast<ConstantExpr*>(V), &InsertPoint, &F, ConstExprMap); });
           Value *Repl = nullptr;
           unsigned Idx = 0;
           PHINode *PhiInst = dyn_cast<PHINode>(&I);
