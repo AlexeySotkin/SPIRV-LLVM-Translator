@@ -38,7 +38,6 @@
 #define DEBUG_TYPE "spv-lower-const-expr"
 
 #include "OCLUtil.h"
-#include "SPIRVInternal.h"
 #include "libSPIRV/SPIRVDebug.h"
 
 #include "llvm/IR/InstVisitor.h"
@@ -69,8 +68,6 @@ cl::opt<bool> SPIRVLowerConst(
 class LowerConstExprVisitor : public InstVisitor<LowerConstExprVisitor> {
   std::unordered_map<ConstantExpr *, Instruction *> ConstExprMap;
   Function *F = nullptr;
-public:
-  LowerConstExprVisitor(Function *Fun): F(Fun){}
 
   Instruction * lowerConstExprOperand(ConstantExpr *CE, Instruction *InsPoint) {
     auto It = ConstExprMap.find(CE);
@@ -122,11 +119,13 @@ public:
         ReplList.push_back(Inst);
       Repl = InsertElementInst::Create(
           (Repl ? Repl : UndefValue::get(Vec->getType())), V,
-          ConstantInt::get(Type::getInt32Ty(F->getContext()), Idx++), "",
-          InsPoint);
+          getInt32(F->getParent(), Idx++), "", InsPoint);
     }
     return Repl;
   }
+
+public:
+  LowerConstExprVisitor(Function *Fun): F(Fun){}
 
   void visitInstruction(Instruction &I) {
       BasicBlock *EntryBB = &*F->begin();
@@ -149,16 +148,12 @@ public:
 
 class SPIRVLowerConstExpr : public FunctionPass {
 public:
-  SPIRVLowerConstExpr() : FunctionPass(ID), Ctx(nullptr) {
+  SPIRVLowerConstExpr() : FunctionPass(ID) {
     initializeSPIRVLowerConstExprPass(*PassRegistry::getPassRegistry());
   }
 
   bool runOnFunction(Function &F) override;
-
   static char ID;
-
-private:
-  LLVMContext *Ctx;
 };
 
 char SPIRVLowerConstExpr::ID = 0;
@@ -167,11 +162,11 @@ bool SPIRVLowerConstExpr::runOnFunction(Function &F) {
   if (!SPIRVLowerConst)
     return false;
 
-  Ctx = &F.getContext();
-
   LLVM_DEBUG(dbgs() << "Enter SPIRVLowerConstExpr:\n");
+
   LowerConstExprVisitor CEV(&F);
   CEV.visit(F);
+
   Module *M = F.getParent();
   verifyRegularizationPass(*M, "SPIRVLowerConstExpr");
 
