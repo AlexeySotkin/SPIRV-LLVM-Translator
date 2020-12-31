@@ -10,11 +10,10 @@
 ; CHECK-LLVM: %4 = getelementptr inbounds [2 x i64], [2 x i64] addrspace(4)* %2, i64 1, i32 0
 ; CHECK-LLVM: %5 = select i1 %1, i64 addrspace(4)* %3, i64 addrspace(4)* %4
 
-; CHECK: InBoundsPtrAccessChain
-; PtrCastToGeneric 19 20 9
-; InBoundsPtrAccessChain 21 25 20 24 15
-; Select 21 26 17 22 25
-
+; CHECK: PtrCastToGeneric [[#]] [[#CAST:]]
+; CHECK: InBoundsPtrAccessChain [[#]] [[#GEP1:]] [[#CAST]] [[#]] [[#]]
+; CHECK: InBoundsPtrAccessChain [[#]] [[#GEP2:]] [[#CAST]] [[#]] [[#]]
+; CHECK: Select [[#]] [[#]] [[#]] [[#GEP1]] [[#GEP2]]
 
 ; ModuleID = 'spec-const-duplicate.bc'
 source_filename = "/work/tmp/spec-const-duplicate.cpp"
