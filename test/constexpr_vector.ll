@@ -40,11 +40,9 @@
 ; CHECK-LLVM:   %35 = insertelement <16 x i8> %34, i8 %19, i32 15
 ; CHECK-LLVM:   store <16 x i8> %35, <16 x i8>* %Funcs, align 16
 ; CHECK-LLVM:        %Funcs1 = alloca <2 x i64>, align 16
-; CHECK-LLVM:   %36 = ptrtoint i32 (i32)* @_Z2f1u2CMvb32_j to i64
-; CHECK-LLVM:   %37 = ptrtoint i32 (i32)* @_Z2f2u2CMvb32_j to i64
-; CHECK-LLVM:   %38 = insertelement <2 x i64> undef, i64 %36, i32 0
-; CHECK-LLVM:   %39 = insertelement <2 x i64> %38, i64 %37, i32 1
-; CHECK-LLVM:   store <2 x i64> %39, <2 x i64>* %Funcs1, align 16
+; CHECK-LLVM:   %36 = insertelement <2 x i64> undef, i64 %0, i32 0
+; CHECK-LLVM:   %37 = insertelement <2 x i64> %36, i64 %10, i32 1
+; CHECK-LLVM:   store <2 x i64> %37, <2 x i64>* %Funcs1, align 16
 
 ; RUN: llvm-as < %s | llvm-spirv -spirv-text --spirv-ext=+SPV_INTEL_function_pointers | FileCheck %s --check-prefix=CHECK-SPIRV
 
@@ -64,8 +62,6 @@
 ; CHECK-SPIRV-DAG: 3 Undef [[TypeVec64]] [[TypeUndefV64:[0-9]+]]
 ; CHECK-SPIRV-DAG: 4 ConstFunctionPointerINTEL [[FuncPtrTy:[0-9]+]] [[F1Ptr:[0-9]+]] [[F1]]
 ; CHECK-SPIRV-DAG: 4 ConstFunctionPointerINTEL [[FuncPtrTy]] [[F2Ptr:[0-9]+]] [[F2]]
-; CHECK-SPIRV-DAG: 4 ConstFunctionPointerINTEL [[FuncPtrTy]] [[F11Ptr:[0-9]+]] [[F1]]
-; CHECK-SPIRV-DAG: 4 ConstFunctionPointerINTEL [[FuncPtrTy]] [[F21Ptr:[0-9]+]] [[F2]]
 
 ; CHECK-SPIRV: 4 ConvertPtrToU [[TypeInt64]] [[Ptr1:[0-9]+]] [[F1Ptr]]
 ; CHECK-SPIRV: 4 Bitcast [[TypeVec8]] [[Vec1:[0-9]+]] [[Ptr1]]
@@ -104,10 +100,8 @@
 ; CHECK-SPIRV: 6 CompositeInsert [[TypeVec16]] [[NewVec14:[0-9]+]] [[v16]] [[NewVec13]] 14
 ; CHECK-SPIRV: 6 CompositeInsert [[TypeVec16]] [[NewVec15:[0-9]+]] [[v17]] [[NewVec14]] 15
 ; CHECK-SPIRV: 5 Store [[Funcs]] [[NewVec15]] [[TypeInt32]] [[StorePtr]]
-; CHECK-SPIRV: 4 ConvertPtrToU [[TypeInt64]] [[Ptr3:[0-9]+]] [[F11Ptr]]
-; CHECK-SPIRV: 4 ConvertPtrToU [[TypeInt64]] [[Ptr4:[0-9]+]] [[F21Ptr]]
-; CHECK-SPIRV: 6 CompositeInsert [[TypeVec64]] [[NewVec20:[0-9]+]] [[Ptr3]] [[TypeUndefV64]] 0
-; CHECK-SPIRV: 6 CompositeInsert [[TypeVec64]] [[NewVec21:[0-9]+]] [[Ptr4]] [[NewVec20]] 1
+; CHECK-SPIRV: 6 CompositeInsert [[TypeVec64]] [[NewVec20:[0-9]+]] [[Ptr1]] [[TypeUndefV64]] 0
+; CHECK-SPIRV: 6 CompositeInsert [[TypeVec64]] [[NewVec21:[0-9]+]] [[Ptr2]] [[NewVec20]] 1
 ; CHECK-SPIRV: 5 Store [[Funcs1]] [[NewVec21]] [[TypeInt32]] [[StorePtr]]
 
 target datalayout = "e-p:32:32-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-v1024:1024"
