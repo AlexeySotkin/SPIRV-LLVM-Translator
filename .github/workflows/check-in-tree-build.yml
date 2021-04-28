@@ -132,12 +132,12 @@ jobs:
         run: |
           cd build
           cmake --build . --config ${{ matrix.build_type }} --target llvm-spirv -j2
-          # FIXME: Testing is disabled at the moment as it requires clang to be present
-          #       - name: Build tests & test
-          #         shell: bash
-          #         run: |
-          #           cd build
-          #           cmake --build . --config Release --target check-llvm-spirv -j2
+# FIXME: Testing is failing at the moment as it requires clang to be present
+      - name: Build tests & test
+        shell: bash
+        run: |
+          cd build
+          cmake --build . --config Release --target check-llvm-spirv -j2
 
   build_and_test_macosx:
     name: macOS
