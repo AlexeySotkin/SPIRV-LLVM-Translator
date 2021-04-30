@@ -122,8 +122,9 @@ jobs:
           mkdir build && cd build
           cmake ..\\llvm-project\\llvm \
             -Thost=x64 \
-            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DLLVM_TARGETS_TO_BUILD="X86" \
+            -DLLVM_ENABLE_PROJECTS="clang" \
             -DLLVM_LIT_ARGS="-sv --no-progress-bar"
       - name: Build
         shell: bash
